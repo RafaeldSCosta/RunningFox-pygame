@@ -202,40 +202,47 @@ class CruzamentoFazenda:
         self.raposa.sprite_raposa_atual = self.raposa.sprite_frente
 
     # -------------------------------------------------------------
-    def checar_colisoes_e_reagir(self):
-        """Verifica colisões e reage: transfere para próxima fase ou finaliza jogo.
-
-        - Se `game_over` estiver ativo, retorna imediatamente.
-        - Chama `raposa_colidiu_com_objeto` e reseta posição caso haja colisão.
-        - Se a raposa colide com `area_fazenda`, avança para próxima fase e
-          troca o fundo (carrega `fundo_fazenda_2.png`).
-        - Se a raposa atinge `area_ovos`, ativa `reached_ovos` e marca `game_over`.
-        """
-        if self.game_over:
-            return
-
+    def tratar_colisao_com_obstaculo(self):
         if self.raposa_colidiu_com_objeto():
             self.resetar_posicao_raposa(colisao=True)
 
-        raposa_rect = pg.Rect(
-            int(self.raposa.pos_raposa[0]),
-            int(self.raposa.pos_raposa[1] + self.raposa.ajuste_y_raposa),
-            int(self.raposa.tamanho_raposa[0]),
-            int(self.raposa.tamanho_raposa[1]),
-        )
 
-        # Checa se chegou na fazenda (área de chegada) e avança de fase
+    # Checa se chegou na fazenda (área de chegada) e avança de fase
+    def verificar_avanco_de_fase(self, raposa_rect):
         if raposa_rect.colliderect(self.fases.area_fazenda):
             print("🐾 A raposa chegou na fazenda!")
+
             self.fases.proxima_fase()
+
             # Troca o fundo para o segundo (fase 2) e escala
             self.fundo_imagem = pg.image.load("imagens_pygame/fundo_fazenda_2.png").convert()
             self.fundo_imagem = pg.transform.scale(self.fundo_imagem, (950, 880))
             self.resetar_posicao_raposa()
 
-        # Checa área dos ovos (condição adicional: area_ovos.width > 1 evita áreas vazias)
+    # Checa área dos ovos (condição adicional: area_ovos.width > 1 evita áreas vazias)
+    def verificar_vitoria(self, raposa_rect):
         if self.fases.area_ovos and self.fases.area_ovos.width > 1 and raposa_rect.colliderect(self.fases.area_ovos):
             if not self.reached_ovos:
                 print("🐾 A raposa chegou nos ovos!")
                 self.reached_ovos = True
                 self.game_over = True
+
+    def checar_colisoes_e_reagir(self):
+        """Coordena as diferentes reações às colisões."""
+        if self.game_over:
+            return
+
+        self.tratar_colisao_com_obstaculo()
+
+        raposa_rect = pg.Rect(
+            int(self.raposa.pos_raposa[0]),
+            int(
+                self.raposa.pos_raposa[1]
+                + self.raposa.ajuste_y_raposa
+            ),
+            int(self.raposa.tamanho_raposa[0]),
+            int(self.raposa.tamanho_raposa[1])
+        )
+
+        self.verificar_avanco_de_fase(raposa_rect)
+        self.verificar_vitoria(raposa_rect)
